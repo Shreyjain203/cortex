@@ -15,6 +15,19 @@ Bootstrap and maintain a private project intelligence workspace in `.cortex/`. R
 
 When this skill is invoked, follow the steps below exactly.
 
+### Step 0 — Schema migration
+
+Current schema version: **1**.
+
+If `.cortex/meta.json` exists, read its `schema_version` field (absent = 0). If it is less than 1, migrate before proceeding:
+
+- Add `"commits_since_full_scan": 0` if missing.
+- Set `"schema_version": 1`.
+- Write the updated meta.json.
+- Print: `cortex: migrated workspace to schema v1`.
+
+This is a no-op on already-current workspaces.
+
 ### Step 1 — Detect mode
 
 Check whether `.cortex/meta.json` exists.
@@ -135,6 +148,7 @@ Free-form space for notes, blog drafts, pitch ideas, or braindumps. On first ins
 #### `.cortex/meta.json`
 ```json
 {
+  "schema_version": 1,
   "project_name": "<inferred from repo folder name or package.json/Cargo.toml/etc>",
   "created_at": "<ISO timestamp of first install>",
   "last_updated": "<ISO timestamp of this run>",
@@ -145,7 +159,7 @@ Free-form space for notes, blog drafts, pitch ideas, or braindumps. On first ins
 }
 ```
 
-On incremental runs: preserve `created_at` and `baseline_commit`. Update `last_updated`, `last_commit`, `scan_mode`. Increment `commits_since_full_scan` by 1. On fresh runs: reset `commits_since_full_scan` to 0.
+On incremental runs: preserve `created_at`, `baseline_commit`, `schema_version`. Update `last_updated`, `last_commit`, `scan_mode`. Increment `commits_since_full_scan` by 1. On fresh runs: reset `commits_since_full_scan` to 0. Always write `schema_version: 1`.
 
 ### Step 5 — Verify the pre-push git hook
 
