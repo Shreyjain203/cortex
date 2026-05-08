@@ -168,4 +168,28 @@ if git rev-parse --git-dir &>/dev/null 2>&1; then
 fi
 
 echo ""
-echo "✓ done. Run /cortex install in any repo to do the initial scan."
+
+# 5. Initial workspace scan — run automatically if we're in a git repo without .cortex/ yet
+if git rev-parse --git-dir &>/dev/null 2>&1 && [ ! -d ".cortex" ] && git rev-parse HEAD &>/dev/null 2>&1; then
+  if command -v claude &>/dev/null; then
+    REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+    HEAD_SHA=$(git rev-parse HEAD)
+    echo "scanning repo for initial workspace... (this takes ~30-60s)"
+    claude --print "You are setting up a .cortex/ project intelligence workspace for the first time in a repo called '${REPO_NAME}'. Read all source files and build a complete picture of the project. Then write the following files:
+
+.cortex/state.md — what is built and live (features, brief architecture, stack)
+.cortex/backlog.md — planned/in-progress items grouped by priority, sourced from TODOs/FIXMEs/READMEs
+.cortex/debt.md — technical debt with specific file references where possible
+.cortex/decisions.md — lightweight ADR log inferred from code structure and comments
+.cortex/scratch.md — seed with a one-paragraph plain-English project summary; add a comment that this file belongs to the human and won't be overwritten
+.cortex/meta.json — {\"schema_version\":1,\"project_name\":\"${REPO_NAME}\",\"created_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"last_updated\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"last_commit\":\"${HEAD_SHA}\",\"scan_mode\":\"fresh\",\"baseline_commit\":\"${HEAD_SHA}\",\"commits_since_full_scan\":0}
+
+Also append .cortex/ to .gitignore if not already present (create .gitignore if missing)." 2>/dev/null \
+      && echo "✓ done. Workspace written to .cortex/" \
+      || echo "! scan failed — run /cortex install manually to create the workspace"
+  else
+    echo "✓ done. claude CLI not found — run /cortex install in any repo to create the workspace."
+  fi
+else
+  echo "✓ done. Run /cortex install in any repo to do the initial scan."
+fi
